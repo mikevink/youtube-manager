@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -49,4 +50,40 @@ func maybeWriteSampleConfig() {
 	} else {
 		onError(err, "Writing sample config failed miserably :(")
 	}
+}
+
+func validate(config Config) error {
+	if 0 == len(config.Playlists) && 0 == len(config.Channels) {
+		return errors.New("no playlists or channels configured")
+	}
+	// omitempty likely saves us from this
+	for _, channel := range config.Channels {
+		if 0 == len(channel) {
+			return errors.New("empty channel found")
+		}
+	}
+	for _, playlist := range config.Playlists {
+		if 0 == len(playlist.Id) {
+			return errors.New("playlist with empty id found")
+		}
+		if 0 == len(playlist.Sources) {
+			return errors.New("playlist with no sources found")
+		}
+		for _, source := range playlist.Sources {
+			// omitempty likely saves us from this
+			if 0 == len(source) {
+				return errors.New(fmt.Sprintf("playlist %s has empty sources", playlist.Id))
+			}
+		}
+	}
+	return nil
+}
+
+func loadConfig() Config {
+	yml, err := ioutil.ReadFile(configFile())
+	onError(err, "Could not read config file")
+	config := Config{}
+	onError(yaml.Unmarshal(yml, &config), "Could not parse config file")
+	onError(validate(config), "Config not valid")
+	return config
 }

@@ -23,6 +23,15 @@ func main() {
 		return
 	}
 
+	//service := getService()
+
+	if args.AuthOnly {
+		log.Println("OAuth successful")
+		return
+	}
+
+	loadConfig()
+
 	log.Println("Nothing to do")
 
 }
