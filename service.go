@@ -30,21 +30,17 @@ func getCachedToken() (*oauth2.Token, error) {
 	}
 	token := &oauth2.Token{}
 	err = json.NewDecoder(file).Decode(token)
-	defer func(file *os.File) {
-		_ = file.Close()
-	}(file)
+	defer fclose(file)
 	return token, err
 }
 
 func saveToken(token *oauth2.Token) {
-	fileName := tokenFile()
-	log.Printf("Saving token to: %s\n", fileName)
+	path := tokenFile()
+	log.Printf("Saving token to: %s\n", path)
 
-	file, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	onError(err, "Unable to cache oauth token")
-	defer func(file *os.File) {
-		_ = file.Close()
-	}(file)
+	defer fclose(file)
 
 	onError(json.NewEncoder(file).Encode(token), "Unable to encode oauth token")
 }
