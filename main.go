@@ -1,15 +1,9 @@
 package main
 
 import (
-	"log"
-	"path/filepath"
-
 	"google.golang.org/api/youtube/v3"
+	"log"
 )
-
-func configFile() string {
-	return filepath.Join(configDir(), "config.yaml")
-}
 
 func listPlaylists(service *youtube.Service) {
 	call := service.Playlists.List([]string{"snippet", "contentDetails"}).ChannelId("-").MaxResults(50)
@@ -22,5 +16,13 @@ func listPlaylists(service *youtube.Service) {
 
 func main() {
 
-	listPlaylists(getService())
+	args := parseArgs()
+
+	if args.SampleConfig {
+		maybeWriteSampleConfig()
+		return
+	}
+
+	log.Println("Nothing to do")
+
 }

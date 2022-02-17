@@ -24,3 +24,7 @@ func configDir() string {
 	onError(os.MkdirAll(configDir, 0700), "Could not create config dir at "+configDir)
 	return configDir
 }
+
+func fclose(file *os.File) {
+	_ = file.Close()
+}
