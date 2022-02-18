@@ -5,8 +5,23 @@ import (
 	"google.golang.org/api/youtube/v3"
 )
 
-func maybeCreatePlaylist(id string, title string) (string, string) {
-	return id, title
+func maybeCreatePlaylist(service *youtube.Service, id string, title string) (string, string) {
+	if 0 != len(id) {
+		listed := listPlaylists(service.Playlists.List([]string{"snippet"}).Id(id))
+		if 0 != len(listed) {
+			return id, listed[id].Title
+		}
+	}
+	result, err := service.Playlists.Insert(
+		[]string{"snippet", "status"},
+		&youtube.Playlist{
+			Snippet: &youtube.PlaylistSnippet{Title: title},
+			Status:  &youtube.PlaylistStatus{PrivacyStatus: "private"},
+		},
+	).Do()
+	onError(err, fmt.Sprintf("Could not create playlist %s", title))
+	fmt.Printf("Created playlist %s: https://www.youtube.com/playlist?list=%s\n", result.Snippet.Title, result.Id)
+	return result.Id, result.Snippet.Title
 }
 
 func listPlaylists(request *youtube.PlaylistsListCall) map[string]SourcePlaylist {
@@ -15,7 +30,7 @@ func listPlaylists(request *youtube.PlaylistsListCall) map[string]SourcePlaylist
 	fetching := true
 	for fetching {
 		result, err := request.Do()
-		onError(err, fmt.Sprintf("Could not get playlists for"))
+		onError(err, fmt.Sprintf("Could not get playlists"))
 		for _, item := range result.Items {
 			playlist := SourcePlaylist{}.FromPlaylistSnippet(item)
 			playlists[playlist.Id] = playlist
@@ -56,7 +71,7 @@ func zipPlaylists(service *youtube.Service, playlists []MergedPlaylist) []Merged
 	resolved := make([]MergedPlaylist, len(playlists))
 	for i, playlist := range playlists {
 		resolved[i] = MergedPlaylist{}.WithDetails(
-			maybeCreatePlaylist(playlist.Id, playlist.Title),
+			maybeCreatePlaylist(service, playlist.Id, playlist.Title),
 		).WithSources(
 			resolveSourcePlaylists(service, playlist.Sources),
 		)
