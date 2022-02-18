@@ -23,15 +23,20 @@ func main() {
 		return
 	}
 
-	//service := getService()
+	service := getService()
 
 	if args.AuthOnly {
 		log.Println("OAuth successful")
 		return
 	}
 
-	loadConfig()
+	config := loadConfig()
 
-	log.Println("Nothing to do")
+	if args.InspectChannels {
+		config.Channels = inspectChannels(service, config.Channels)
+	} else {
+		log.Println("Nothing to do")
+	}
 
+	saveConfig(config)
 }

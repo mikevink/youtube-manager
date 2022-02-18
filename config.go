@@ -11,6 +11,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// todo: store id and name for playlist and channels, to help with human legibility
+
 type MergedPlaylist struct {
 	Id      string
 	Sources []string `yaml:",omitempty"`
@@ -29,7 +31,10 @@ func maybeWriteSampleConfig() {
 	path := configFile() + ".sample"
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		sample := Config{
-			Channels: []string{"Usernames", "Of", "Channels", "To", "Watch"},
+			Channels: []string{
+				"IDs", "Of", "Channels", "To", "Watch",
+				"or", "title:<title-of-channel>",
+			},
 			Playlists: []MergedPlaylist{
 				{
 					Id:      "name:<name-of-new-playlist> # will be replaced",
@@ -86,4 +91,11 @@ func loadConfig() Config {
 	onError(yaml.Unmarshal(yml, &config), "Could not parse config file")
 	onError(validate(config), "Config not valid")
 	return config
+}
+
+func saveConfig(config Config) {
+	data, err := yaml.Marshal(config)
+	onError(err, "Could not marshal config")
+	onError(ioutil.WriteFile(configFile(), data, 0600), "Could not write config")
+
 }
