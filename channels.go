@@ -79,30 +79,18 @@ func addChannels(service *youtube.Service, channels []Channel) []Channel {
 	return channels
 }
 
-func getPlaylists(service *youtube.Service, channel Channel) []SourcePlaylist {
-	request := service.Playlists.List([]string{"snippet"}).MaxResults(50).ChannelId(channel.Id)
-	var playlists []SourcePlaylist
-	fetching := true
-	for fetching {
-		result, err := request.Do()
-		onError(err, fmt.Sprintf("Could not get playlists for channel %s", channel))
-		resultlists := make([]SourcePlaylist, len(result.Items))
-		for i, item := range result.Items {
-			resultlists[i] = SourcePlaylist{}.FromPlaylistSnippet(item)
-		}
-		playlists = append(playlists, resultlists...)
-		if 0 != len(result.NextPageToken) {
-			request = request.PageToken(result.NextPageToken)
-		} else {
-			fetching = false
-		}
+func getChannelPlaylists(service *youtube.Service, channel Channel) []SourcePlaylist {
+	listed := listPlaylists(service.Playlists.List([]string{"snippet"}).ChannelId(channel.Id))
+	playlists := make([]SourcePlaylist, 0, len(listed))
+	for _, playlist := range listed {
+		playlists = append(playlists, playlist)
 	}
 	return playlists
 }
 
 func inspectChannel(service *youtube.Service, channel Channel) {
 	fmt.Printf("Channel %s:\n", channel)
-	playlists := getPlaylists(service, channel)
+	playlists := getChannelPlaylists(service, channel)
 	if 0 == len(playlists) {
 		fmt.Println("\t- No playlists")
 		return

@@ -14,6 +14,10 @@ func (c Channel) String() string {
 	return fmt.Sprintf("%s :: %s", c.Id, c.Title)
 }
 
+func (c Channel) Unresolved() bool {
+	return 0 == len(c.Id) || 0 == len(c.Title)
+}
+
 func (c Channel) FromSearchSnippet(snippet *youtube.SearchResultSnippet) Channel {
 	c.Id = snippet.ChannelId
 	c.Title = snippet.ChannelTitle
@@ -48,4 +52,15 @@ type MergedPlaylist struct {
 
 func (m MergedPlaylist) String() string {
 	return fmt.Sprintf("%s :: %s", m.Id, m.Title)
+}
+
+func (m MergedPlaylist) WithDetails(id string, title string) MergedPlaylist {
+	m.Id = id
+	m.Title = title
+	return m
+}
+
+func (m MergedPlaylist) WithSources(sources []SourcePlaylist) MergedPlaylist {
+	m.Sources = sources
+	return m
 }

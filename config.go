@@ -58,18 +58,12 @@ func validate(config Config) error {
 		}
 	}
 	for _, playlist := range config.Playlists {
-		if 0 == len(playlist.Id) {
-			return errors.New("playlist with empty id found")
-		}
 		if 0 == len(playlist.Sources) {
 			return errors.New("playlist with no sources found")
 		}
 		for _, source := range playlist.Sources {
 			if 0 == len(source.Id) {
 				return errors.New(fmt.Sprintf("source playlist for %s with empty id found", playlist.Title))
-			}
-			if 0 == len(source.Title) {
-				return errors.New(fmt.Sprintf("source playlist for %s with empty title found", playlist.Title))
 			}
 		}
 	}
