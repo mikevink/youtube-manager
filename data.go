@@ -11,7 +11,7 @@ type Channel struct {
 }
 
 func (c Channel) String() string {
-	return fmt.Sprintf("%s #%s", c.Title, c.Id)
+	return fmt.Sprintf("%s :: %s", c.Id, c.Title)
 }
 
 func (c Channel) FromSearchSnippet(snippet *youtube.SearchResultSnippet) Channel {
@@ -27,7 +27,17 @@ type SourcePlaylist struct {
 }
 
 func (s SourcePlaylist) String() string {
-	return fmt.Sprintf("%s #%s [%s]", s.Title, s.Id, s.Channel)
+	return fmt.Sprintf("%s :: %s", s.Id, s.Title)
+}
+
+func (s SourcePlaylist) FromPlaylistSnippet(playlist *youtube.Playlist) SourcePlaylist {
+	s.Id = playlist.Id
+	s.Title = playlist.Snippet.Title
+	s.Channel = Channel{
+		Id:    playlist.Snippet.ChannelId,
+		Title: playlist.Snippet.ChannelTitle,
+	}
+	return s
 }
 
 type MergedPlaylist struct {
@@ -37,5 +47,5 @@ type MergedPlaylist struct {
 }
 
 func (m MergedPlaylist) String() string {
-	return fmt.Sprintf("%s #%s", m.Title, m.Id)
+	return fmt.Sprintf("%s :: %s", m.Id, m.Title)
 }

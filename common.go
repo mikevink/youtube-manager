@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -45,4 +46,10 @@ func quittingInput(reader *bufio.Reader, prompt string) string {
 		os.Exit(0)
 	}
 	return r
+}
+
+func atoi(s string) int {
+	i, err := strconv.Atoi(s)
+	onError(err, "Atoi failed")
+	return i
 }

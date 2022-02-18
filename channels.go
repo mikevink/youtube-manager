@@ -6,48 +6,34 @@ import (
 	"google.golang.org/api/youtube/v3"
 	"log"
 	"os"
-	"strconv"
+	"strings"
 )
-
-//func lookupChannelId(service *youtube.Service, title string) string {
-//	search, err := service.Search.List([]string{"snippet"}).Type("channel").Q(title).Do()
-//	onError(err, fmt.Sprintf("Failed to search for channel '%s'", title))
-//	for _, item := range search.Items {
-//		if "youtube#channel" == item.Id.Kind && title == item.Snippet.Title {
-//			return item.Snippet.ChannelId
-//		}
-//	}
-//	log.Fatalf("Could not find channel titled '%s' is first 25 results", title)
-//	return ""
-//}
-
-func getOptions(title string, request *youtube.SearchListCall) (string, []Channel, *youtube.SearchListResponse) {
-	result, err := request.Do()
-	onError(err, fmt.Sprintf("Could not search for channel '%s'", title))
-	prompt := "Please choose an option in []:"
-	options := make([]Channel, len(result.Items))
-	for i, item := range result.Items {
-		options[i] = Channel{}.FromSearchSnippet(item.Snippet)
-		prompt = fmt.Sprintf(
-			"%s\n\t[%d] %s - Description: %s",
-			prompt, i, options[i], item.Snippet.Description,
-		)
-	}
-	return prompt, options, result
-}
 
 func lookupChannel(service *youtube.Service, reader *bufio.Reader) Channel {
 	title := quittingInput(reader, "Enter channel title")
 	request := service.Search.List([]string{"snippet"}).Type("channel").MaxResults(10).Q(title)
 	for true {
-		prompt, options, result := getOptions(title, request)
+		result, err := request.Do()
+		onError(err, fmt.Sprintf("Could not search for channel '%s'", title))
+		fmt.Println("Please choose an option in []:")
+		options := make([]Channel, len(result.Items))
+		for i, item := range result.Items {
+			options[i] = Channel{}.FromSearchSnippet(item.Snippet)
+			description := ""
+			if 0 != len(item.Snippet.Description) {
+				description = fmt.Sprintf("\t     %s\n", item.Snippet.Description)
+			}
+			fmt.Printf(
+				"\t[%2d] %s\n%s\t     https://www.youtube.com/channel/%s\n",
+				i, options[i], description, options[i].Id,
+			)
+		}
 		if 0 != len(result.PrevPageToken) {
-			prompt = fmt.Sprintf("%s\n\t[p] Prev", prompt)
+			fmt.Println("\t[ p] Prev")
 		}
 		if 0 != len(result.NextPageToken) {
-			prompt = fmt.Sprintf("%s\n\t[n] Next", prompt)
+			fmt.Println("\t[ n] Next")
 		}
-		log.Println(prompt)
 		option := quittingInput(reader, "Option")
 		if "n" == option {
 			if 0 != len(result.NextPageToken) {
@@ -62,9 +48,7 @@ func lookupChannel(service *youtube.Service, reader *bufio.Reader) Channel {
 				log.Fatalln("No prev page available, bailing")
 			}
 		} else {
-			inx, err := strconv.Atoi(option)
-			onError(err, "Atoi failed")
-			return options[inx]
+			return options[atoi(option)]
 		}
 	}
 	return Channel{}
@@ -95,48 +79,61 @@ func addChannels(service *youtube.Service, channels []Channel) []Channel {
 	return channels
 }
 
-//func getPlaylists(service *youtube.Service, channelId string) []*youtube.Playlist {
-//	request := service.Playlists.List([]string{"snippet"}).MaxResults(50).ChannelId(channelId)
-//	var playlists []*youtube.Playlist
-//	fetching := true
-//	for fetching {
-//		result, err := request.Do()
-//		onError(err, fmt.Sprintf("Could not get playlists for channel 'https://www.youtube.com/channel/%s'", channelId))
-//		playlists = append(playlists, result.Items...)
-//		if 0 != len(result.NextPageToken) {
-//			request = request.PageToken(result.NextPageToken)
-//		} else {
-//			fetching = false
-//		}
-//	}
-//	return playlists
-//}
+func getPlaylists(service *youtube.Service, channel Channel) []SourcePlaylist {
+	request := service.Playlists.List([]string{"snippet"}).MaxResults(50).ChannelId(channel.Id)
+	var playlists []SourcePlaylist
+	fetching := true
+	for fetching {
+		result, err := request.Do()
+		onError(err, fmt.Sprintf("Could not get playlists for channel %s", channel))
+		resultlists := make([]SourcePlaylist, len(result.Items))
+		for i, item := range result.Items {
+			resultlists[i] = SourcePlaylist{}.FromPlaylistSnippet(item)
+		}
+		playlists = append(playlists, resultlists...)
+		if 0 != len(result.NextPageToken) {
+			request = request.PageToken(result.NextPageToken)
+		} else {
+			fetching = false
+		}
+	}
+	return playlists
+}
 
-//func inspectChannel(service *youtube.Service, channelId string) {
-//	playlists := getPlaylists(service, channelId)
-//	if 0 == len(playlists) {
-//		log.Printf("No playlists found for channel '%s'\n", channelId)
-//		return
-//	}
-//	channelTitle := playlists[0].Snippet.ChannelTitle
-//	msg := fmt.Sprintf("Channel %s(%s):\n", channelTitle, channelId)
-//	for _, playlist := range playlists {
-//		msg = fmt.Sprintf("%s\t%s -- %s\n", msg, playlist.Snippet.Title, playlist.Id)
-//	}
-//	log.Println(msg)
-//}
+func inspectChannel(service *youtube.Service, channel Channel) {
+	fmt.Printf("Channel %s:\n", channel)
+	playlists := getPlaylists(service, channel)
+	if 0 == len(playlists) {
+		fmt.Println("\t- No playlists")
+		return
+	}
+	for _, playlist := range playlists {
+		fmt.Printf("\t- %s\n\t  https://www.youtube.com/playlist?list=%s\n", playlist, playlist.Id)
+	}
+}
 
-//func inspectChannels(service *youtube.Service, channels []Channel) []Channel {
-//	channelIds := make([]string, len(channels))
-//	for i, channel := range channels {
-//		if strings.HasPrefix(channel, "title:") {
-//			channelIds[i] = lookupChannelId(service, strings.Replace(channel, "title:", "", 1))
-//		} else {
-//			channelIds[i] = channel
-//		}
-//	}
-//	for _, channelId := range channelIds {
-//		inspectChannel(service, channelId)
-//	}
-//	return channelIds
-//}
+func inspectChannels(service *youtube.Service, channels []Channel) {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Which channel(s) do you want to inspect?")
+	for i, channel := range channels {
+		fmt.Printf("\t[%d] %s\n", i, channel)
+	}
+	fmt.Println("\t[*] All\n\tc,s,v accepted")
+	choice := quittingInput(reader, "Option [*]")
+	if 0 == len(choice) {
+		choice = "*"
+	}
+	var choices []Channel
+	if strings.Contains(choice, "*") {
+		choices = channels
+	} else {
+		inxs := strings.Split(choice, ",")
+		choices = make([]Channel, len(inxs))
+		for i, inx := range inxs {
+			choices[i] = channels[atoi(inx)]
+		}
+	}
+	for _, channel := range choices {
+		inspectChannel(service, channel)
+	}
+}
