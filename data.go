@@ -27,7 +27,7 @@ func (c Channel) FromSearchSnippet(snippet *youtube.SearchResultSnippet) Channel
 type SourcePlaylist struct {
 	Id      string
 	Title   string
-	Channel Channel
+	Channel Channel `yaml:",flow"`
 }
 
 func (s SourcePlaylist) String() string {
