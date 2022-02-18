@@ -31,7 +31,7 @@ func maybeWriteSampleConfig() {
 				{
 					Id:    "merged playlist id. can be empty, as will fill / create",
 					Title: "title of playlist",
-					Sources: []SourcePlaylist{
+					Sources: []Playlist{
 						{"PlaylistId", "PlaylistTitle", Channel{"ChannelId", "ChannelTitle"}},
 					},
 				},

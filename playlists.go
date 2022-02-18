@@ -24,15 +24,15 @@ func maybeCreatePlaylist(service *youtube.Service, id string, title string) (str
 	return result.Id, result.Snippet.Title
 }
 
-func listPlaylists(request *youtube.PlaylistsListCall) map[string]SourcePlaylist {
+func listPlaylists(request *youtube.PlaylistsListCall) map[string]Playlist {
 	request = request.MaxResults(50)
-	playlists := make(map[string]SourcePlaylist)
+	playlists := make(map[string]Playlist)
 	fetching := true
 	for fetching {
 		result, err := request.Do()
 		onError(err, fmt.Sprintf("Could not get playlists"))
 		for _, item := range result.Items {
-			playlist := SourcePlaylist{}.FromPlaylistSnippet(item)
+			playlist := Playlist{}.FromPlaylistSnippet(item)
 			playlists[playlist.Id] = playlist
 		}
 		if 0 != len(result.NextPageToken) {
@@ -44,7 +44,7 @@ func listPlaylists(request *youtube.PlaylistsListCall) map[string]SourcePlaylist
 	return playlists
 }
 
-func resolveSourcePlaylists(service *youtube.Service, playlists []SourcePlaylist) []SourcePlaylist {
+func resolveSourcePlaylists(service *youtube.Service, playlists []Playlist) []Playlist {
 	var ids []string
 	for _, playlist := range playlists {
 		if 0 == len(playlist.Title) || playlist.Channel.Unresolved() {
@@ -55,7 +55,7 @@ func resolveSourcePlaylists(service *youtube.Service, playlists []SourcePlaylist
 		return playlists
 	}
 	listed := listPlaylists(service.Playlists.List([]string{"snippet"}).Id(ids...))
-	resolved := make([]SourcePlaylist, 0, len(playlists))
+	resolved := make([]Playlist, 0, len(playlists))
 	for _, playlist := range playlists {
 		list, prs := listed[playlist.Id]
 		if prs {
@@ -67,14 +67,44 @@ func resolveSourcePlaylists(service *youtube.Service, playlists []SourcePlaylist
 	return resolved
 }
 
+func zipPlaylist(service *youtube.Service, playlist MergedPlaylist) {
+	//reader := bufio.NewReader(os.Stdin)
+	videos := determineVideosToAdd(service, playlist)
+	fmt.Println("Adding videos:")
+	if 0 == len(videos) {
+		fmt.Println("\t - None")
+		return
+	}
+	for _, video := range videos {
+		fmt.Printf("\t - %s\n", video)
+		_, err := service.PlaylistItems.Insert(
+			[]string{"snippet"},
+			&youtube.PlaylistItem{
+				Snippet: &youtube.PlaylistItemSnippet{
+					PlaylistId: playlist.Id,
+					ResourceId: &youtube.ResourceId{
+						Kind:    "youtube#video",
+						VideoId: video.Id,
+					},
+				},
+			},
+		).Do()
+		onError(err, fmt.Sprintf("Could not add video %s", video))
+		fmt.Println("\t   Done")
+		//_ = quittingInput(reader, "Continue? [y]")
+	}
+}
+
 func zipPlaylists(service *youtube.Service, playlists []MergedPlaylist) []MergedPlaylist {
-	resolved := make([]MergedPlaylist, len(playlists))
-	for i, playlist := range playlists {
-		resolved[i] = MergedPlaylist{}.WithDetails(
+	resolved := make([]MergedPlaylist, 0, len(playlists))
+	for _, playlist := range playlists {
+		merged := MergedPlaylist{}.WithDetails(
 			maybeCreatePlaylist(service, playlist.Id, playlist.Title),
 		).WithSources(
 			resolveSourcePlaylists(service, playlist.Sources),
 		)
+		zipPlaylist(service, merged)
+		resolved = append(resolved, merged)
 	}
 	return resolved
 }

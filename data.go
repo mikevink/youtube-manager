@@ -24,17 +24,17 @@ func (c Channel) FromSearchSnippet(snippet *youtube.SearchResultSnippet) Channel
 	return c
 }
 
-type SourcePlaylist struct {
+type Playlist struct {
 	Id      string
 	Title   string
 	Channel Channel `yaml:",flow"`
 }
 
-func (s SourcePlaylist) String() string {
+func (s Playlist) String() string {
 	return fmt.Sprintf("%s :: %s", s.Id, s.Title)
 }
 
-func (s SourcePlaylist) FromPlaylistSnippet(playlist *youtube.Playlist) SourcePlaylist {
+func (s Playlist) FromPlaylistSnippet(playlist *youtube.Playlist) Playlist {
 	s.Id = playlist.Id
 	s.Title = playlist.Snippet.Title
 	s.Channel = Channel{
@@ -44,10 +44,20 @@ func (s SourcePlaylist) FromPlaylistSnippet(playlist *youtube.Playlist) SourcePl
 	return s
 }
 
+type Video struct {
+	Id       string
+	Title    string
+	Playlist Playlist
+}
+
+func (v Video) String() string {
+	return fmt.Sprintf("%s :: %s :: %s", v.Title, v.Playlist.Title, v.Playlist.Channel.Title)
+}
+
 type MergedPlaylist struct {
 	Id      string `yaml:",omitempty"`
 	Title   string
-	Sources []SourcePlaylist
+	Sources []Playlist
 }
 
 func (m MergedPlaylist) String() string {
@@ -60,7 +70,7 @@ func (m MergedPlaylist) WithDetails(id string, title string) MergedPlaylist {
 	return m
 }
 
-func (m MergedPlaylist) WithSources(sources []SourcePlaylist) MergedPlaylist {
+func (m MergedPlaylist) WithSources(sources []Playlist) MergedPlaylist {
 	m.Sources = sources
 	return m
 }

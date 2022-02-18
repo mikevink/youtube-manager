@@ -79,9 +79,9 @@ func addChannels(service *youtube.Service, channels []Channel) []Channel {
 	return channels
 }
 
-func getChannelPlaylists(service *youtube.Service, channel Channel) []SourcePlaylist {
+func getChannelPlaylists(service *youtube.Service, channel Channel) []Playlist {
 	listed := listPlaylists(service.Playlists.List([]string{"snippet"}).ChannelId(channel.Id))
-	playlists := make([]SourcePlaylist, 0, len(listed))
+	playlists := make([]Playlist, 0, len(listed))
 	for _, playlist := range listed {
 		playlists = append(playlists, playlist)
 	}
