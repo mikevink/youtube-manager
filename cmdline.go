@@ -4,6 +4,7 @@ import "flag"
 
 type Args struct {
 	AuthOnly        bool
+	AddChannel      bool
 	InspectChannels bool
 	SampleConfig    bool
 }
@@ -11,6 +12,7 @@ type Args struct {
 func parseArgs() Args {
 	args := Args{
 		AuthOnly:        false,
+		AddChannel:      false,
 		InspectChannels: false,
 		SampleConfig:    false,
 	}
@@ -18,6 +20,10 @@ func parseArgs() Args {
 	flag.BoolVar(
 		&args.AuthOnly, "auth-only", args.AuthOnly,
 		"Just authenticate, nothing more",
+	)
+	flag.BoolVar(
+		&args.AddChannel, "add-channel", args.AddChannel,
+		"Add channel",
 	)
 	flag.BoolVar(
 		&args.InspectChannels, "inspect-channels", args.InspectChannels,

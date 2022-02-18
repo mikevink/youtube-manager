@@ -11,15 +11,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// todo: store id and name for playlist and channels, to help with human legibility
-
-type MergedPlaylist struct {
-	Id      string
-	Sources []string `yaml:",omitempty"`
-}
-
 type Config struct {
-	Channels  []string         `yaml:",omitempty"`
+	Channels  []Channel        `yaml:",omitempty"`
 	Playlists []MergedPlaylist `yaml:",omitempty"`
 }
 
@@ -31,18 +24,16 @@ func maybeWriteSampleConfig() {
 	path := configFile() + ".sample"
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		sample := Config{
-			Channels: []string{
-				"IDs", "Of", "Channels", "To", "Watch",
-				"or", "title:<title-of-channel>",
+			Channels: []Channel{
+				{"ChannelId", "Channel Title"},
 			},
 			Playlists: []MergedPlaylist{
 				{
-					Id:      "name:<name-of-new-playlist> # will be replaced",
-					Sources: []string{"Youtube", "IDs", "Of", "Source", "Playlists"},
-				},
-				{
-					Id:      "id-of-existing-playlist",
-					Sources: []string{"Youtube", "IDs", "Of", "Source", "Playlists"},
+					Id:    "merged playlist id. can be empty, as will fill / create",
+					Title: "title of playlist",
+					Sources: []SourcePlaylist{
+						{"PlaylistId", "PlaylistTitle", Channel{"ChannelId", "ChannelTitle"}},
+					},
 				},
 			},
 		}
@@ -58,13 +49,12 @@ func maybeWriteSampleConfig() {
 }
 
 func validate(config Config) error {
-	if 0 == len(config.Playlists) && 0 == len(config.Channels) {
-		return errors.New("no playlists or channels configured")
-	}
-	// omitempty likely saves us from this
 	for _, channel := range config.Channels {
-		if 0 == len(channel) {
-			return errors.New("empty channel found")
+		if 0 == len(channel.Id) {
+			return errors.New("channel found with empty id")
+		}
+		if 0 == len(channel.Title) {
+			return errors.New("channel found with empty title")
 		}
 	}
 	for _, playlist := range config.Playlists {
@@ -75,9 +65,11 @@ func validate(config Config) error {
 			return errors.New("playlist with no sources found")
 		}
 		for _, source := range playlist.Sources {
-			// omitempty likely saves us from this
-			if 0 == len(source) {
-				return errors.New(fmt.Sprintf("playlist %s has empty sources", playlist.Id))
+			if 0 == len(source.Id) {
+				return errors.New(fmt.Sprintf("source playlist for %s with empty id found", playlist.Title))
+			}
+			if 0 == len(source.Title) {
+				return errors.New(fmt.Sprintf("source playlist for %s with empty title found", playlist.Title))
 			}
 		}
 	}

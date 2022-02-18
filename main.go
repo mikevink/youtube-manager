@@ -32,10 +32,12 @@ func main() {
 
 	config := loadConfig()
 
-	if args.InspectChannels {
-		config.Channels = inspectChannels(service, config.Channels)
-	} else {
-		log.Println("Nothing to do")
+	if 0 == len(config.Channels) && 0 == len(config.Playlists) {
+		args.AddChannel = true
+	}
+
+	if args.AddChannel {
+		config.Channels = addChannels(service, config.Channels)
 	}
 
 	saveConfig(config)
