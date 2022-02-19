@@ -28,10 +28,14 @@ func listVideos(service *youtube.Service, verbose bool, playlists ...Playlist) m
 					if _, prs := videos[videoId]; !prs {
 						videos[videoId] = video
 					} else {
-						fmt.Printf("\t - Skipping [status=duplicate] %s\n", video)
+						if verbose {
+							fmt.Printf("\t - Skipping [status=duplicate] %s\n", video)
+						}
 					}
 				} else {
-					fmt.Printf("\t - Skipping [status=%s] %s\n", status, video)
+					if verbose {
+						fmt.Printf("\t - Skipping [status=%s] %s\n", status, video)
+					}
 				}
 			}
 			if 0 != len(result.NextPageToken) {
