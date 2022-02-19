@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"google.golang.org/api/youtube/v3"
+	"os"
 )
 
 func maybeCreatePlaylist(service *youtube.Service, id string, title string) (string, string) {
@@ -67,9 +69,9 @@ func resolveSourcePlaylists(service *youtube.Service, playlists []Playlist) []Pl
 	return resolved
 }
 
-func zipPlaylist(service *youtube.Service, playlist MergedPlaylist) {
-	//reader := bufio.NewReader(os.Stdin)
-	videos := determineVideosToAdd(service, playlist)
+func zipPlaylist(service *youtube.Service, playlist MergedPlaylist, verbose bool) {
+	reader := bufio.NewReader(os.Stdin)
+	videos := determineVideosToAdd(service, playlist, verbose)
 	fmt.Println("Adding videos:")
 	if 0 == len(videos) {
 		fmt.Println("\t - None")
@@ -91,11 +93,13 @@ func zipPlaylist(service *youtube.Service, playlist MergedPlaylist) {
 		).Do()
 		onError(err, fmt.Sprintf("Could not add video %s", video))
 		fmt.Println("\t   Done")
-		//_ = quittingInput(reader, "Continue? [y]")
+		if verbose {
+			_ = quittingInput(reader, "Continue? [y]")
+		}
 	}
 }
 
-func zipPlaylists(service *youtube.Service, playlists []MergedPlaylist) []MergedPlaylist {
+func zipPlaylists(service *youtube.Service, playlists []MergedPlaylist, verbose bool) []MergedPlaylist {
 	resolved := make([]MergedPlaylist, 0, len(playlists))
 	for _, playlist := range playlists {
 		merged := MergedPlaylist{}.WithDetails(
@@ -103,7 +107,7 @@ func zipPlaylists(service *youtube.Service, playlists []MergedPlaylist) []Merged
 		).WithSources(
 			resolveSourcePlaylists(service, playlist.Sources),
 		)
-		zipPlaylist(service, merged)
+		zipPlaylist(service, merged, verbose)
 		resolved = append(resolved, merged)
 	}
 	return resolved

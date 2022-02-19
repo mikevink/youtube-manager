@@ -7,6 +7,7 @@ type Args struct {
 	AddChannel      bool
 	InspectChannels bool
 	SampleConfig    bool
+	Verbose         bool
 }
 
 func parseArgs() Args {
@@ -15,6 +16,7 @@ func parseArgs() Args {
 		AddChannel:      false,
 		InspectChannels: false,
 		SampleConfig:    false,
+		Verbose:         false,
 	}
 
 	flag.BoolVar(
@@ -32,6 +34,10 @@ func parseArgs() Args {
 	flag.BoolVar(
 		&args.SampleConfig, "sample-config", args.SampleConfig,
 		"Generate a sample config, if one doesn't exist",
+	)
+	flag.BoolVar(
+		&args.Verbose, "verbose", args.Verbose,
+		"Verbose logging",
 	)
 
 	flag.Parse()
