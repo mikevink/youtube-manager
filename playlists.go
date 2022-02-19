@@ -77,7 +77,8 @@ func zipPlaylist(service *youtube.Service, playlist MergedPlaylist, verbose bool
 		fmt.Println("\t - None")
 		return
 	}
-	for _, video := range videos {
+	total := len(videos)
+	for i, video := range videos {
 		fmt.Printf("\t - %s\n", video)
 		_, err := service.PlaylistItems.Insert(
 			[]string{"snippet"},
@@ -92,7 +93,7 @@ func zipPlaylist(service *youtube.Service, playlist MergedPlaylist, verbose bool
 			},
 		).Do()
 		onError(err, fmt.Sprintf("Could not add video %s", video))
-		fmt.Println("\t   Done")
+		fmt.Printf("\t   Done %d/%d\n", i, total)
 		if verbose {
 			_ = quittingInput(reader, "Continue? [y]")
 		}
