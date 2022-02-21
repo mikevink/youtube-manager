@@ -35,7 +35,11 @@ func main() {
 	}
 
 	if !args.AddChannel && !args.InspectChannels {
-		config.Playlists = zipPlaylists(service, config.Playlists, args.Verbose)
+		if args.ResolvePlaylists {
+			config.Playlists = resolvePlaylists(service, config.Playlists)
+		} else {
+			config.Playlists = zipPlaylists(service, config.Playlists, args.Verbose)
+		}
 	}
 
 	saveConfig(config)

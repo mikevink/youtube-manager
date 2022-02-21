@@ -113,3 +113,16 @@ func zipPlaylists(service *youtube.Service, playlists []MergedPlaylist, verbose 
 	}
 	return resolved
 }
+
+func resolvePlaylists(service *youtube.Service, playlists []MergedPlaylist) []MergedPlaylist {
+	resolved := make([]MergedPlaylist, 0, len(playlists))
+	for _, playlist := range playlists {
+		merged := MergedPlaylist{}.WithDetails(
+			maybeCreatePlaylist(service, playlist.Id, playlist.Title),
+		).WithSources(
+			resolveSourcePlaylists(service, playlist.Sources),
+		)
+		resolved = append(resolved, merged)
+	}
+	return resolved
+}

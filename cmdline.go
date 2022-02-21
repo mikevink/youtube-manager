@@ -3,20 +3,22 @@ package main
 import "flag"
 
 type Args struct {
-	AuthOnly        bool
-	AddChannel      bool
-	InspectChannels bool
-	SampleConfig    bool
-	Verbose         bool
+	AuthOnly         bool
+	AddChannel       bool
+	InspectChannels  bool
+	ResolvePlaylists bool
+	SampleConfig     bool
+	Verbose          bool
 }
 
 func parseArgs() Args {
 	args := Args{
-		AuthOnly:        false,
-		AddChannel:      false,
-		InspectChannels: false,
-		SampleConfig:    false,
-		Verbose:         false,
+		AuthOnly:         false,
+		AddChannel:       false,
+		InspectChannels:  false,
+		ResolvePlaylists: false,
+		SampleConfig:     false,
+		Verbose:          false,
 	}
 
 	flag.BoolVar(
@@ -30,6 +32,10 @@ func parseArgs() Args {
 	flag.BoolVar(
 		&args.InspectChannels, "inspect-channels", args.InspectChannels,
 		"Given the channels in the config, list their playlists",
+	)
+	flag.BoolVar(
+		&args.ResolvePlaylists, "resolve-playlists", args.ResolvePlaylists,
+		"Resolve playlist details and update config",
 	)
 	flag.BoolVar(
 		&args.SampleConfig, "sample-config", args.SampleConfig,
