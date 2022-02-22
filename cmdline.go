@@ -9,6 +9,7 @@ type Args struct {
 	ResolvePlaylists bool
 	SampleConfig     bool
 	Verbose          bool
+	Noop             bool
 }
 
 func parseArgs() Args {
@@ -19,6 +20,7 @@ func parseArgs() Args {
 		ResolvePlaylists: false,
 		SampleConfig:     false,
 		Verbose:          false,
+		Noop:             false,
 	}
 
 	flag.BoolVar(
@@ -44,6 +46,10 @@ func parseArgs() Args {
 	flag.BoolVar(
 		&args.Verbose, "verbose", args.Verbose,
 		"Verbose logging",
+	)
+	flag.BoolVar(
+		&args.Noop, "noop", args.Noop,
+		"Don't actually add videos -- still do all the rest",
 	)
 
 	flag.Parse()

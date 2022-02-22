@@ -3,17 +3,28 @@ package main
 import (
 	"errors"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
-
-	"gopkg.in/yaml.v3"
+	"regexp"
 )
 
 type Config struct {
 	Channels  []Channel        `yaml:",omitempty"`
 	Playlists []MergedPlaylist `yaml:",omitempty"`
+	Exclude   []string         `yaml:",omitempty"`
+}
+
+func (c Config) compileExcludes() []*regexp.Regexp {
+	var expressions []*regexp.Regexp
+	for _, exp := range c.Exclude {
+		rexp, err := regexp.Compile(exp)
+		onError(err, fmt.Sprintf("Could not parse expression '%s'", exp))
+		expressions = append(expressions, rexp)
+	}
+	return expressions
 }
 
 func configFile() string {
@@ -83,5 +94,4 @@ func saveConfig(config Config) {
 	data, err := yaml.Marshal(config)
 	onError(err, "Could not marshal config")
 	onError(ioutil.WriteFile(configFile(), data, 0600), "Could not write config")
-
 }

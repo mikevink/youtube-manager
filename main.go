@@ -38,7 +38,7 @@ func main() {
 		if args.ResolvePlaylists {
 			config.Playlists = resolvePlaylists(service, config.Playlists)
 		} else {
-			config.Playlists = zipPlaylists(service, config.Playlists, args.Verbose)
+			config.Playlists = zipPlaylists(service, config.Playlists, config.compileExcludes(), args.Verbose, args.Noop)
 		}
 	}
 

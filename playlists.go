@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"google.golang.org/api/youtube/v3"
 	"os"
+	"regexp"
 )
 
 func maybeCreatePlaylist(service *youtube.Service, id string, title string) (string, string) {
@@ -69,9 +70,9 @@ func resolveSourcePlaylists(service *youtube.Service, playlists []Playlist) []Pl
 	return resolved
 }
 
-func zipPlaylist(service *youtube.Service, playlist MergedPlaylist, verbose bool) {
+func zipPlaylist(service *youtube.Service, playlist MergedPlaylist, exclude []*regexp.Regexp, verbose bool, noop bool) {
 	reader := bufio.NewReader(os.Stdin)
-	videos := determineVideosToAdd(service, playlist, verbose)
+	videos := determineVideosToAdd(service, playlist, exclude, verbose)
 	fmt.Println("Adding videos:")
 	if 0 == len(videos) {
 		fmt.Println("\t - None")
@@ -80,19 +81,23 @@ func zipPlaylist(service *youtube.Service, playlist MergedPlaylist, verbose bool
 	total := len(videos)
 	for i, video := range videos {
 		fmt.Printf("\t - %s\n", video)
-		_, err := service.PlaylistItems.Insert(
-			[]string{"snippet"},
-			&youtube.PlaylistItem{
-				Snippet: &youtube.PlaylistItemSnippet{
-					PlaylistId: playlist.Id,
-					ResourceId: &youtube.ResourceId{
-						Kind:    "youtube#video",
-						VideoId: video.Id,
+		if noop {
+			fmt.Println("\t   Noop run, not actually making request")
+		} else {
+			_, err := service.PlaylistItems.Insert(
+				[]string{"snippet"},
+				&youtube.PlaylistItem{
+					Snippet: &youtube.PlaylistItemSnippet{
+						PlaylistId: playlist.Id,
+						ResourceId: &youtube.ResourceId{
+							Kind:    "youtube#video",
+							VideoId: video.Id,
+						},
 					},
 				},
-			},
-		).Do()
-		onError(err, fmt.Sprintf("Could not add video %s", video))
+			).Do()
+			onError(err, fmt.Sprintf("Could not add video %s", video))
+		}
 		fmt.Printf("\t   Done %d/%d\n", i, total)
 		if verbose {
 			_ = quittingInput(reader, "Continue? [y]")
@@ -100,7 +105,9 @@ func zipPlaylist(service *youtube.Service, playlist MergedPlaylist, verbose bool
 	}
 }
 
-func zipPlaylists(service *youtube.Service, playlists []MergedPlaylist, verbose bool) []MergedPlaylist {
+func zipPlaylists(
+	service *youtube.Service, playlists []MergedPlaylist, exclude []*regexp.Regexp, verbose bool, noop bool,
+) []MergedPlaylist {
 	resolved := make([]MergedPlaylist, 0, len(playlists))
 	for _, playlist := range playlists {
 		merged := MergedPlaylist{}.WithDetails(
@@ -108,7 +115,7 @@ func zipPlaylists(service *youtube.Service, playlists []MergedPlaylist, verbose 
 		).WithSources(
 			resolveSourcePlaylists(service, playlist.Sources),
 		)
-		zipPlaylist(service, merged, verbose)
+		zipPlaylist(service, merged, exclude, verbose, noop)
 		resolved = append(resolved, merged)
 	}
 	return resolved
