@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"google.golang.org/api/youtube/v3"
+	"time"
 )
 
 type Channel struct {
@@ -58,6 +59,7 @@ type MergedPlaylist struct {
 	Id      string `yaml:",omitempty"`
 	Title   string
 	Sources []Playlist
+	After   string `yaml:",omitempty"`
 }
 
 func (m MergedPlaylist) String() string {
@@ -73,4 +75,13 @@ func (m MergedPlaylist) WithDetails(id string, title string) MergedPlaylist {
 func (m MergedPlaylist) WithSources(sources []Playlist) MergedPlaylist {
 	m.Sources = sources
 	return m
+}
+
+func (m MergedPlaylist) PublishedAfter() time.Time {
+	if 0 == len(m.After) {
+		return time.UnixMilli(0)
+	}
+	tm, err := time.Parse("2006-01-02", m.After)
+	onError(err, fmt.Sprintf("Could not parse time %s for playlist %v", m.After, m))
+	return tm
 }

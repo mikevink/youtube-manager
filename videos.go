@@ -5,9 +5,12 @@ import (
 	"google.golang.org/api/youtube/v3"
 	"regexp"
 	"strings"
+	"time"
 )
 
-func listVideos(service *youtube.Service, verbose bool, exclude []*regexp.Regexp, playlists ...Playlist) map[string]Video {
+func listVideos(
+	service *youtube.Service, verbose bool, exclude []*regexp.Regexp, publishedAfter time.Time, playlists ...Playlist,
+) map[string]Video {
 	videos := make(map[string]Video)
 	if verbose {
 		fmt.Println("Finding videos")
@@ -21,10 +24,17 @@ func listVideos(service *youtube.Service, verbose bool, exclude []*regexp.Regexp
 			for _, item := range result.Items {
 				status := item.Status.PrivacyStatus
 				videoId := item.Snippet.ResourceId.VideoId
+				tm, err := time.Parse(time.RFC3339, item.Snippet.PublishedAt)
+				onError(err, fmt.Sprintf("Could not parse time for %s, from %v", item.Snippet.PublishedAt, item))
 				video := Video{
 					Id:       videoId,
 					Title:    item.Snippet.Title,
 					Playlist: playlist,
+				}
+				if tm.Before(publishedAfter) {
+					if verbose {
+						fmt.Printf("\t - Skipping [status=publishedEarly] %s\n", video)
+					}
 				}
 				if "public" == status || "unlisted" == status {
 					filterTitle := strings.ToLower(video.Title)
@@ -70,12 +80,12 @@ func listVideos(service *youtube.Service, verbose bool, exclude []*regexp.Regexp
 }
 
 func determineVideosToAdd(service *youtube.Service, playlist MergedPlaylist, exclude []*regexp.Regexp, verbose bool) []Video {
-	mine := listVideos(service, verbose, []*regexp.Regexp{}, Playlist{
+	mine := listVideos(service, verbose, []*regexp.Regexp{}, time.UnixMilli(0), Playlist{
 		Id:      playlist.Id,
 		Title:   playlist.Title,
 		Channel: Channel{"mine", "mine"},
 	})
-	sources := listVideos(service, verbose, exclude, playlist.Sources...)
+	sources := listVideos(service, verbose, exclude, playlist.PublishedAfter(), playlist.Sources...)
 	removed := false
 	fmt.Println("Videos removed:")
 	for id := range mine {
