@@ -83,6 +83,9 @@ func (m MergedPlaylist) PublishedAfter() time.Time {
 		return time.UnixMilli(0)
 	}
 	tm, err := time.Parse("2006-01-02", m.After)
-	onError(err, fmt.Sprintf("Could not parse time %s for playlist %v", m.After, m))
+	if nil != err {
+		tm, err = time.Parse(time.RFC3339, m.After)
+		onError(err, fmt.Sprintf("Could not parse time %s for playlist %v", m.After, m))
+	}
 	return tm
 }
