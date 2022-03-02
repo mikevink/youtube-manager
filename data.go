@@ -58,17 +58,18 @@ func (v Video) String() string {
 type MergedPlaylist struct {
 	Id      string `yaml:",omitempty"`
 	Title   string
-	Sources []Playlist
 	After   string `yaml:",omitempty"`
+	Sources []Playlist
 }
 
 func (m MergedPlaylist) String() string {
 	return fmt.Sprintf("%s :: %s", m.Id, m.Title)
 }
 
-func (m MergedPlaylist) WithDetails(id string, title string) MergedPlaylist {
+func (m MergedPlaylist) WithDetails(id string, title string, after string) MergedPlaylist {
 	m.Id = id
 	m.Title = title
+	m.After = after
 	return m
 }
 

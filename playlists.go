@@ -8,11 +8,13 @@ import (
 	"regexp"
 )
 
-func maybeCreatePlaylist(service *youtube.Service, id string, title string) (string, string) {
+func maybeCreatePlaylist(
+	service *youtube.Service, id string, title string, after string,
+) (string, string, string) {
 	if 0 != len(id) {
 		listed := listPlaylists(service.Playlists.List([]string{"snippet"}).Id(id))
 		if 0 != len(listed) {
-			return id, listed[id].Title
+			return id, listed[id].Title, after
 		}
 	}
 	result, err := service.Playlists.Insert(
@@ -24,7 +26,7 @@ func maybeCreatePlaylist(service *youtube.Service, id string, title string) (str
 	).Do()
 	onError(err, fmt.Sprintf("Could not create playlist %s", title))
 	fmt.Printf("Created playlist %s: https://www.youtube.com/playlist?list=%s\n", result.Snippet.Title, result.Id)
-	return result.Id, result.Snippet.Title
+	return result.Id, result.Snippet.Title, after
 }
 
 func listPlaylists(request *youtube.PlaylistsListCall) map[string]Playlist {
@@ -111,7 +113,7 @@ func zipPlaylists(
 	resolved := make([]MergedPlaylist, 0, len(playlists))
 	for _, playlist := range playlists {
 		merged := MergedPlaylist{}.WithDetails(
-			maybeCreatePlaylist(service, playlist.Id, playlist.Title),
+			maybeCreatePlaylist(service, playlist.Id, playlist.Title, playlist.After),
 		).WithSources(
 			resolveSourcePlaylists(service, playlist.Sources),
 		)
@@ -125,7 +127,7 @@ func resolvePlaylists(service *youtube.Service, playlists []MergedPlaylist) []Me
 	resolved := make([]MergedPlaylist, 0, len(playlists))
 	for _, playlist := range playlists {
 		merged := MergedPlaylist{}.WithDetails(
-			maybeCreatePlaylist(service, playlist.Id, playlist.Title),
+			maybeCreatePlaylist(service, playlist.Id, playlist.Title, playlist.After),
 		).WithSources(
 			resolveSourcePlaylists(service, playlist.Sources),
 		)
