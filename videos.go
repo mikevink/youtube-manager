@@ -135,15 +135,17 @@ func determineVideosToAdd(service *youtube.Service, playlist MergedPlaylist, exc
 	})
 	sources := listVideos(service, verbose, exclude, playlist.PublishedAfter(), playlist.Sources...)
 	removed := false
-	fmt.Println("Videos removed:")
-	for id := range mine {
-		if _, pres := sources[id]; !pres {
-			fmt.Printf("\t - %s\n", mine[id])
-			removed = true
+	if 0 == len(playlist.After) {
+		fmt.Println("Videos removed:")
+		for id := range mine {
+			if _, pres := sources[id]; !pres {
+				fmt.Printf("\t - %s\n", mine[id])
+				removed = true
+			}
 		}
-	}
-	if !removed {
-		fmt.Println("\t - None")
+		if !removed {
+			fmt.Println("\t - None")
+		}
 	}
 	var added []Video
 	for id := range sources {

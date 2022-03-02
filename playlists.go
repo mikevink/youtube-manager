@@ -6,6 +6,7 @@ import (
 	"google.golang.org/api/youtube/v3"
 	"os"
 	"regexp"
+	"time"
 )
 
 func maybeCreatePlaylist(
@@ -72,13 +73,16 @@ func resolveSourcePlaylists(service *youtube.Service, playlists []Playlist) []Pl
 	return resolved
 }
 
-func zipPlaylist(service *youtube.Service, playlist MergedPlaylist, exclude []*regexp.Regexp, verbose bool, noop bool) {
+func zipPlaylist(
+	service *youtube.Service, playlist MergedPlaylist, exclude []*regexp.Regexp, verbose bool, noop bool,
+) MergedPlaylist {
 	reader := bufio.NewReader(os.Stdin)
+	fmt.Println(playlist)
 	videos := determineVideosToAdd(service, playlist, exclude, verbose)
 	fmt.Println("Adding videos:")
 	if 0 == len(videos) {
 		fmt.Println("\t - None")
-		return
+		return playlist
 	}
 	total := len(videos)
 	for i, video := range videos {
@@ -105,6 +109,10 @@ func zipPlaylist(service *youtube.Service, playlist MergedPlaylist, exclude []*r
 			_ = quittingInput(reader, "Continue? [y]")
 		}
 	}
+	if !noop && 0 != len(playlist.After) {
+		playlist.After = time.Now().Format(time.RFC3339)
+	}
+	return playlist
 }
 
 func zipPlaylists(
@@ -117,7 +125,7 @@ func zipPlaylists(
 		).WithSources(
 			resolveSourcePlaylists(service, playlist.Sources),
 		)
-		zipPlaylist(service, merged, exclude, verbose, noop)
+		merged = zipPlaylist(service, merged, exclude, verbose, noop)
 		resolved = append(resolved, merged)
 	}
 	return resolved
